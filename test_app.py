@@ -28,6 +28,11 @@ class WebsiteTests(unittest.TestCase):
   with self.assertRaises(HTTPError) as ctx:urlopen(req,timeout=5)
   self.assertEqual(ctx.exception.code,400)
   ctx.exception.close()
+ def test_local_model_opt_in_required(self):
+  req=Request(f'http://127.0.0.1:{self.port}/api/evaluate',data=json.dumps({'url':'https://github.com/Expensify/App/issues/105145','use_local_ai':True}).encode(),headers={'Content-Type':'application/json'},method='POST')
+  with self.assertRaises(HTTPError) as ctx:urlopen(req,timeout=5)
+  self.assertEqual(ctx.exception.code,409)
+  ctx.exception.close()
  def test_unknown_route_is_404(self):
   with self.assertRaises(HTTPError) as ctx:self.get('/server.env')
   self.assertEqual(ctx.exception.code,404)

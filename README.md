@@ -14,6 +14,7 @@ Developer bounty boards often mix open issues, assigned work, heavily competed t
 - Fetch public issue metadata directly from GitHub's REST API, no GitHub credential required.
 - Mark closed issues and requests for deposits as **KILL**, assigned or very crowded issues as **HOLD**, and plausibly open opportunities as **RESEARCH**.
 - Expose a conspicuous "advertised amount, not verified funding" distinction.
+- Optional local open-weight Qwen 2.5 14B review using a private Raptor llama.cpp server, when explicitly enabled.
 - Optional, server-side hosted Mozilla Otari model review, **only when a valid account token is configured**.
 - Responsive web frontend with fictional demo example and live issue review.
 - No auto-pulls, no emails, no credential extraction, no GitHub modifications, no bounty submissions, no reward or earnings claims.
@@ -52,7 +53,7 @@ export OTARI_AI_TOKEN="your_private_otari_api_token"
 python app.py
 ```
 
-Then select "Add Mozilla Otari skeptical review". The server sends a limited excerpt of public GitHub issue text to the hosted Otari API at `https://api.otari.ai/api/v1/chat/completions`. The selected model ID in this prototype is `mzai:moonshotai/Kimi-K2.6`; a different model may be required depending on the account's available models. API credentials are never returned to the frontend. The Otari second opinion cannot change a HOLD/KILL/RESEARCH decision, mark a payment verified, or post a PR.
+Then select "Add Mozilla Otari skeptical review". Local open-weight review can instead be enabled with `PRIZEPROOF_ENABLE_LOCAL_AI=1 python app.py` when Qwen already runs on the host at `127.0.0.1:11436`. This local option is **not** the contest-required Otari hosted gateway. The server sends a limited excerpt of public GitHub issue text to the hosted Otari API at `https://api.otari.ai/api/v1/chat/completions`. The selected model ID in this prototype is `mzai:moonshotai/Kimi-K2.6`; a different model may be required depending on the account's available models. API credentials are never returned to the frontend. The Otari second opinion cannot change a HOLD/KILL/RESEARCH decision, mark a payment verified, or post a PR.
 
 To try the CLI hosted review:
 

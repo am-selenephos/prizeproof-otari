@@ -45,7 +45,7 @@ class Handler(BaseHTTPRequestHandler):
   if route=='/app.js':
    return self.send(200,(ROOT/'app.js').read_bytes(),'application/javascript; charset=utf-8')
   if route=='/api/health':
-   return self.send(200,{'ok':True,'project':'PrizeProof','version':'0.1.0','otari_configured':bool(os.getenv('OTARI_AI_TOKEN')),'issue_source':'GitHub API','submissions_enabled':False})
+   return self.send(200,{'ok':True,'project':'PrizeProof','version':'0.1.0','otari_configured':bool(os.getenv('OTARI_AI_TOKEN')),'local_ai_enabled':os.getenv('PRIZEPROOF_ENABLE_LOCAL_AI')=='1','issue_source':'GitHub API','submissions_enabled':False})
   if route=='/api/demo':
    return self.send(200,{**core.score_issue(core.DEMO_ISSUE),'demo':True})
   return self.send(404,{'error':'Not found'})
@@ -62,12 +62,20 @@ class Handler(BaseHTTPRequestHandler):
    obj=json.loads(self.rfile.read(n))
    if not isinstance(obj,dict) or not isinstance(obj.get('url'),str):raise ValueError('GitHub issue URL is required')
    core.parse_issue_url(obj['url'])
+   if obj.get('use_local_ai') and obj.get('use_otari'):
+    return self.send(400,{'error':'Choose only one model reviewer.'})
+   if obj.get('use_local_ai') and os.getenv('PRIZEPROOF_ENABLE_LOCAL_AI')!='1':
+    return self.send(409,{'error':'Local AI is not enabled on this server.'})
    if obj.get('use_otari') and not os.getenv('OTARI_AI_TOKEN'):
     return self.send(409,{'error':'Otari hosted token not configured. Add it to the server environment, never the browser.'})
    issue=core.fetch_issue(obj['url'])
    result=core.score_issue(issue)
-   if obj.get('use_otari'):
-    review=core.ask_otari(json.dumps({'issue_title':issue.get('title'),'untrusted_issue_description':str(issue.get('body',''))[:8000],'deterministic_review':result},ensure_ascii=True))
+   if obj.get('use_local_ai') or obj.get('use_otari'):
+    review_prompt=json.dumps({'issue_title':issue.get('title'),'untrusted_issue_description':str(issue.get('body',''))[:8000],'deterministic_review':result},ensure_ascii=True)
+    if obj.get('use_local_ai'):
+     review=core.ask_otari(review_prompt,api_key='local-runtime',endpoint='http://127.0.0.1:11436/v1/chat/completions',model='qwen2.5-14b-am')
+    else:
+     review=core.ask_otari(review_prompt)
     result=core.attach_model_analysis(result,review)
    return self.send(200,result)
   except (ValueError,TypeError,json.JSONDecodeError) as e:
